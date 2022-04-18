@@ -80,6 +80,11 @@ main_loop:
         sub ax, 0x4000
         cmp ax, 0x4000
         jl group1
+        sub ax, 0x4000
+        cmp ax, 0x4000
+        jl group2
+        sub ax, 0x4000
+        jmp group3
 
 group0:
         mov r10b, al
@@ -198,6 +203,21 @@ so_rcr:
         popf
         rcr word [r8], 1
         jmp continue_loop
+
+group2:
+        cmp ax, 0
+        jz so_clc
+        jnz so_stc
+so_clc:
+        popf
+        clc
+        jmp continue_loop
+    
+so_stc:
+        popf
+        stc
+        jmp continue_loop
+
 
 continue_loop:
         pushf
