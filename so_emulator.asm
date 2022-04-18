@@ -1,5 +1,18 @@
 global so_emul
 
+section .bss
+
+A: resb 1
+D: resb 1
+X: resb 1
+Y: resb 1
+PC: resb 1
+unused: resb 1
+C: resb 1
+Z: resb 1
+
+section .text
+
 ; rdi - code
 ; rsi - data
 ; [rsp] - steps
@@ -8,13 +21,8 @@ global so_emul
 ; rdx - PC
 so_emul:
         test rsp, rsp
-        push rcx ; core - [rsp + 40]
-        push rdx ; steps - [rsp + 32]
-
-        push 0 ; Y - [rsp + 24]
-        push 0 ; X - [rsp + 16]
-        push 0 ; D - [rsp + 8]
-        push 0 ; A - [rsp]
+        push rcx ; core - [rsp + 8]
+        push rdx ; steps - [rsp]
 
         pushf
 
@@ -25,6 +33,9 @@ so_emul:
         je end
 main_loop:
         mov ax, [rdi + 2 * rdx]
+
+        xor r8, r8
+        xor r9, r9
 
         cmp ax, 0x4000
         jl group0
@@ -52,7 +63,6 @@ group1:
         mov r9b, al
         shr rax, 8
 
-        xor r8, r8
         mov r8b, al
 
         shr rax, 3
@@ -66,14 +76,16 @@ group1:
 so_mov:
         popf
 
-        mov r9, [rsp + 8 * r9]
-        mov [rsp + 8 * r8], r9
+        lea r11, [rel A]
+        mov r9, [r11 + r9]
+        mov [r11 + r8], r9
 
         jmp continue_loop
 so_movi:
         popf
 
-        mov [rsp + 8 * r8], r9b
+        lea r11, [rel A]
+        mov [r11 + r8], r9b
 
         jmp continue_loop
 continue_loop:
@@ -85,33 +97,17 @@ end:
         xor rax, rax
 
         popf
+        mov [rel Z], word 0
         jnz non_zero
-        lea rax, [rax + 1]
+        mov [rel Z], word 1
 non_zero:
-        shl rax, 8
-
+        mov [rel C], word 0
         jnc non_carry
-        lea rax, [rax + 1]
+        mov [rel C], word 1
 non_carry:
-        shl rax, 16
+        mov [rel PC], rdx
 
-        lea rax, [rax + rdx]
-        shl rax, 8
+        mov rax, qword [rel A]
 
-        mov r8, [rsp + 24]
-        lea rax, [rax + r8]
-        shl rax, 8
-
-        mov r8, [rsp + 16]
-        lea rax, [rax + r8]
-        shl rax, 8
-
-        mov r8, [rsp + 8]
-        lea rax, [rax + r8]
-        shl rax, 8
-        
-        mov r8, [rsp]
-        lea rax, [rax + r8]
-
-        add rsp, 48
+        add rsp, 16
         ret
