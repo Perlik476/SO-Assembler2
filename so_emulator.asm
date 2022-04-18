@@ -111,12 +111,44 @@ arg_pointer_arg2_back_g0:
 
         cmp r10b, 0
         je so_mov
+        cmp r10b, 2
+        je so_or
         cmp r10b, 4
         je so_add
+        cmp r10b, 5
+        je so_sub
+        cmp r10b, 6
+        je so_adc
+        cmp r10b, 7
+        je so_sbb
         ; ...
 
+so_mov:
+        popf
+        mov [r8], r9b
+        jmp continue_loop
+so_or:
+        popf
+        or [r8], r9b
+        jmp continue_loop
+so_add:
+        popf
+        add [r8], r9b
+        jmp continue_loop
+so_sub:
+        popf
+        sub [r8], r9b
+        jmp continue_loop
+so_adc:
+        popf
+        adc [r8], r9b
+        jmp continue_loop
+so_sbb:
+        popf
+        sbb [r8], r9b
+        jmp continue_loop
+
 group1:
-        
         mov r9b, al
         shr rax, 8
 
@@ -137,26 +169,30 @@ arg_pointer_arg1_back_g1:
 
         cmp r10b, 0
         je so_movi
-
-so_mov:
-        popf
-
-        mov [r8], r9b
-
-        jmp continue_loop
-so_add:
-        popf
-
-        add [r8], r9b
-
-        jmp continue_loop
+        cmp r10b, 3
+        je so_xori
+        cmp r10b, 4
+        je so_addi
+        cmp r10b, 6
+        je so_cmpi
 
 so_movi:
         popf
-
         mov [r8], r9b
-
         jmp continue_loop
+so_xori:
+        popf
+        xor [r8], r9b
+        jmp continue_loop
+so_addi:
+        popf
+        add [r8], r9b
+        jmp continue_loop
+so_cmpi:
+        popf
+        cmp [r8], r9b
+        jmp continue_loop
+
 continue_loop:
         pushf
         inc rdx
