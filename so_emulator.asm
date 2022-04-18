@@ -16,26 +16,26 @@ section .text
 arg_pointer:
     cmp r11, 4
     jne check_Y
-    mov rax, [rel X]
-    lea r11, [rsi + rax]
+    mov r11b, [rel X]
+    lea r11, [rsi + r11]
     ret
 check_Y:
     cmp r11, 5
     jne check_XD
-    mov rax, [rel Y]
-    lea r11, [rsi + rax]
+    mov r11b, [rel Y]
+    lea r11, [rsi + r11]
     ret
 check_XD:
     cmp r11, 6
     jne check_YD
-    mov rax, [rel X]
-    add rax, [rel D]
-    lea r11, [rsi + rax]
+    mov r11b, [rel X]
+    add r11b, [rel D]
+    lea r11, [rsi + r11]
     ret
 check_YD:
-    mov rax, [rel Y]
-    add rax, [rel D]
-    lea r11, [rsi + rax]
+    mov r11b, [rel Y]
+    add r11b, [rel D]
+    lea r11, [rsi + r11]
     ret
 
 arg_pointer_arg1_g0:
@@ -64,7 +64,7 @@ so_emul:
         pushf
 
         mov rcx, rdx
-        mov rdx, 0
+        mov rdx, [rel PC]
 
         cmp rcx, 0
         je end
@@ -86,12 +86,12 @@ group0:
 
         ; r8 - arg1, r9 - arg2
         shr rax, 8
-        mov r9, rax
-        shr rax, 3
+
         mov r8, rax
+        shr rax, 3
+        mov r9, rax
         shl rax, 3
-        sub r9, rax
-        shl r9, 3
+        sub r8, rax
 
         mov r11, r8
         cmp r11, 4
@@ -107,10 +107,12 @@ arg_pointer_arg1_back_g0:
         lea rax, [rel A]
         add r11, rax
 arg_pointer_arg2_back_g0:
-        mov r9, r11
+        mov r9b, [r11]
 
         cmp r10b, 0
         je so_mov
+        cmp r10b, 4
+        je so_add
         ; ...
 
 group1:
@@ -139,11 +141,16 @@ arg_pointer_arg1_back_g1:
 so_mov:
         popf
 
-        lea r11, [rel A]
-        mov r9, [r11 + r9]
-        mov [r11 + r8], r9
+        mov [r8], r9b
 
         jmp continue_loop
+so_add:
+        popf
+
+        add [r8], r9b
+
+        jmp continue_loop
+
 so_movi:
         popf
 
