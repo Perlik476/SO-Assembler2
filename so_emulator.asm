@@ -218,6 +218,44 @@ so_stc:
         stc
         jmp continue_loop
 
+group3:
+        mov r8b, al
+        shr rax, 8
+
+        cmp al, 0
+        je so_jmp
+        cmp al, 2
+        je so_jnc
+        cmp al, 3
+        je so_jc
+        cmp al, 4
+        je so_jnz
+        cmp al, 5
+        je so_jz
+        jmp brk
+
+so_jmp:
+        add dl, r8b
+        popf
+        jmp continue_loop
+so_jnc:
+        jnc so_jmp
+        popf
+        jmp continue_loop
+so_jc:
+        jc so_jmp
+        popf
+        jmp continue_loop
+so_jnz:
+        jnz so_jmp
+        popf
+        jmp continue_loop
+so_jz:
+        jz so_jmp
+        popf
+        jmp continue_loop
+brk:
+        jmp end
 
 continue_loop:
         pushf
