@@ -173,8 +173,10 @@ arg_pointer_arg1_back_g1:
         je so_xori
         cmp r10b, 4
         je so_addi
-        cmp r10b, 6
+        cmp r10b, 5
         je so_cmpi
+        cmp r10b, 6
+        je so_rcr
 
 so_movi:
         popf
@@ -191,6 +193,10 @@ so_addi:
 so_cmpi:
         popf
         cmp [r8], r9b
+        jmp continue_loop
+so_rcr:
+        popf
+        rcr word [r8], 1
         jmp continue_loop
 
 continue_loop:
