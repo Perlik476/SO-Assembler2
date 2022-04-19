@@ -92,6 +92,7 @@ so_emul:
         pushf
 
         mov rcx, rdx
+        xor rdx, rdx
         mov dl, [rel PC]
 
         cmp rcx, 0
@@ -199,6 +200,9 @@ so_sbb:
 so_xchg:
         popf
         ; xchg [r8], [r9] ; TODO
+        mov al, [r9]
+        xchg [r8], al
+        xchg [r9], al
         jmp continue_loop
 
 group1:
