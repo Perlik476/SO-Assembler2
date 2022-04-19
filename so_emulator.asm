@@ -57,14 +57,25 @@ arg_pointer_arg1_g1:
 ; r8-r11 - A, D, X, Y
 ; rdx - PC
 so_emul:
-        test rsp, rsp
+        xor ah, ah
+        add ah, [rel Z]
+        shl ah, 6
+        add ah, [rel C]
+        sahf
+
         push rcx ; core - [rsp + 8]
         push rdx ; steps - [rsp]
+
+
 
         pushf
 
         mov rcx, rdx
-        mov rdx, [rel PC]
+        mov dl, [rel PC]
+
+        ; mov word [rel Y], 21
+        ; rcr word [rel Y], 1
+        ; jmp end
 
         cmp rcx, 0
         je end
@@ -76,13 +87,13 @@ main_loop:
         xor r9, r9
 
         cmp ax, 0x4000
-        jl group0
+        jb group0
         sub ax, 0x4000
         cmp ax, 0x4000
-        jl group1
+        jb group1
         sub ax, 0x4000
         cmp ax, 0x4000
-        jl group2
+        jb group2
         sub ax, 0x4000
         jmp group3
 
@@ -100,7 +111,7 @@ group0:
 
         mov r11, r8
         cmp r11, 4
-        jge arg_pointer_arg1_g0
+        jae arg_pointer_arg1_g0
         lea rax, [rel A]
         add r11, rax
 arg_pointer_arg1_back_g0:
@@ -108,7 +119,7 @@ arg_pointer_arg1_back_g0:
 
         mov r11, r9
         cmp r11, 4
-        jge arg_pointer_arg2_g0
+        jae arg_pointer_arg2_g0
         lea rax, [rel A]
         add r11, rax
 arg_pointer_arg2_back_g0:
@@ -166,7 +177,7 @@ group1:
 
         mov r11, r8
         cmp r11, 4
-        jge arg_pointer_arg1_g1
+        jae arg_pointer_arg1_g1
         lea rax, [rel A]
         lea r11, [r11 + rax]
 arg_pointer_arg1_back_g1:
@@ -201,7 +212,9 @@ so_cmpi:
         jmp continue_loop
 so_rcr:
         popf
-        rcr word [r8], 1
+        mov r9b, [r8]
+        rcr r9b, 1
+        mov [r8], r9b
         jmp continue_loop
 
 group2:
@@ -223,7 +236,7 @@ group3:
         shr rax, 8
 
         cmp al, 0
-        je so_jmp
+        je so_jmp_with_popf
         cmp al, 2
         je so_jnc
         cmp al, 3
@@ -235,31 +248,36 @@ group3:
         jmp brk
 
 so_jmp:
+        pushf
+        add dl, r8b
+        popf
+        jmp continue_loop
+so_jmp_with_popf:
         add dl, r8b
         popf
         jmp continue_loop
 so_jnc:
-        jnc so_jmp
         popf
+        jnc so_jmp
         jmp continue_loop
 so_jc:
-        jc so_jmp
         popf
+        jc so_jmp
         jmp continue_loop
 so_jnz:
-        jnz so_jmp
         popf
+        jnz so_jmp
         jmp continue_loop
 so_jz:
-        jz so_jmp
         popf
+        jz so_jmp
         jmp continue_loop
 brk:
         jmp end
 
 continue_loop:
         pushf
-        inc rdx
+        inc dl
         dec rcx
         jnz main_loop
 
@@ -275,7 +293,7 @@ non_zero:
         jnc non_carry
         mov [rel C], word 1
 non_carry:
-        mov [rel PC], rdx
+        mov [rel PC], dl
 
         mov rax, qword [rel A]
 
