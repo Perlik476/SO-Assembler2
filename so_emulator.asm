@@ -14,42 +14,65 @@ Z: resb 1
 section .text
 
 arg_pointer:
-    cmp r11, 4
-    jne check_Y
-    mov r11b, [rel X]
-    lea r11, [rsi + r11]
-    ret
+        cmp r11, 4
+        jne check_Y
+        mov r11b, [rel X]
+        lea r11, [rsi + r11]
+        ret
 check_Y:
-    cmp r11, 5
-    jne check_XD
-    mov r11b, [rel Y]
-    lea r11, [rsi + r11]
-    ret
+        cmp r11, 5
+        jne check_XD
+        mov r11b, [rel Y]
+        lea r11, [rsi + r11]
+        ret
 check_XD:
-    cmp r11, 6
-    jne check_YD
-    mov r11b, [rel X]
-    add r11b, [rel D]
-    lea r11, [rsi + r11]
-    ret
+        cmp r11, 6
+        jne check_YD
+        mov r11b, [rel X]
+        add r11b, [rel D]
+        lea r11, [rsi + r11]
+        ret
 check_YD:
-    mov r11b, [rel Y]
-    add r11b, [rel D]
-    lea r11, [rsi + r11]
-    ret
+        mov r11b, [rel Y]
+        add r11b, [rel D]
+        lea r11, [rsi + r11]
+        ret
 
 arg_pointer_arg1_g0:
-    call arg_pointer
-    jmp arg_pointer_arg1_back_g0
+        call arg_pointer
+        jmp arg_pointer_arg1_back_g0
 
 arg_pointer_arg2_g0:
-    call arg_pointer
-    jmp arg_pointer_arg2_back_g0
+        call arg_pointer
+        jmp arg_pointer_arg2_back_g0
 
 arg_pointer_arg1_g1:
-    call arg_pointer
-    jmp arg_pointer_arg1_back_g1
+        call arg_pointer
+        jmp arg_pointer_arg1_back_g1
     
+
+set_flags:
+        xor ah, ah
+        add ah, [rel Z]
+        shl ah, 6
+        add ah, [rel C]
+        sahf
+        ret
+
+set_zf_variable:
+        mov [rel Z], word 0
+        jnz .non_zero
+        mov [rel Z], word 1
+.non_zero:
+        ret
+
+set_cf_variable:
+        mov [rel C], word 0
+        jnc .non_carry
+        mov [rel C], word 1
+.non_carry:
+        ret
+
 ; rdi - code
 ; rsi - data
 ; [rsp] - steps
@@ -57,16 +80,10 @@ arg_pointer_arg1_g1:
 ; r8-r11 - A, D, X, Y
 ; rdx - PC
 so_emul:
-        xor ah, ah
-        add ah, [rel Z]
-        shl ah, 6
-        add ah, [rel C]
-        sahf
+        call set_flags
 
         push rcx ; core - [rsp + 8]
         push rdx ; steps - [rsp]
-
-
 
         pushf
 
@@ -204,7 +221,11 @@ so_xori:
         jmp continue_loop
 so_addi:
         popf
+        call set_cf_variable
+        call set_zf_variable
         add [r8], r9b
+        call set_zf_variable
+        call set_flags
         jmp continue_loop
 so_cmpi:
         popf
@@ -285,14 +306,10 @@ end:
         xor rax, rax
 
         popf
-        mov [rel Z], word 0
-        jnz non_zero
-        mov [rel Z], word 1
-non_zero:
-        mov [rel C], word 0
-        jnc non_carry
-        mov [rel C], word 1
-non_carry:
+
+        call set_cf_variable
+        call set_zf_variable
+
         mov [rel PC], dl
 
         mov rax, qword [rel A]
