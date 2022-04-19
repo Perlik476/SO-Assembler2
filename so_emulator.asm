@@ -60,17 +60,21 @@ set_flags:
         ret
 
 set_zf_variable:
-        mov [rel Z], word 0
+        pushf
+        mov [rel Z], byte 0
         jnz .non_zero
-        mov [rel Z], word 1
+        mov [rel Z], byte 1
 .non_zero:
+        popf
         ret
 
 set_cf_variable:
-        mov [rel C], word 0
+        pushf
+        mov [rel C], byte 0
         jnc .non_carry
-        mov [rel C], word 1
+        mov [rel C], byte 1
 .non_carry:
+        popf
         ret
 
 ; rdi - code
@@ -89,10 +93,6 @@ so_emul:
 
         mov rcx, rdx
         mov dl, [rel PC]
-
-        ; mov word [rel Y], 21
-        ; rcr word [rel Y], 1
-        ; jmp end
 
         cmp rcx, 0
         je end
@@ -140,7 +140,12 @@ arg_pointer_arg1_back_g0:
         lea rax, [rel A]
         add r11, rax
 arg_pointer_arg2_back_g0:
-        mov r9b, [r11]
+        mov r9, r11
+
+        cmp r10b, 8
+        je so_xchg
+
+        mov r9b, [r9]
 
         cmp r10b, 0
         je so_mov
@@ -154,7 +159,6 @@ arg_pointer_arg2_back_g0:
         je so_adc
         cmp r10b, 7
         je so_sbb
-        ; ...
 
 so_mov:
         popf
@@ -162,15 +166,27 @@ so_mov:
         jmp continue_loop
 so_or:
         popf
+        call set_cf_variable
+        call set_zf_variable
         or [r8], r9b
+        call set_zf_variable
+        call set_flags
         jmp continue_loop
 so_add:
         popf
+        call set_cf_variable
+        call set_zf_variable
         add [r8], r9b
+        call set_zf_variable
+        call set_flags
         jmp continue_loop
 so_sub:
         popf
+        call set_cf_variable
+        call set_zf_variable
         sub [r8], r9b
+        call set_zf_variable
+        call set_flags
         jmp continue_loop
 so_adc:
         popf
@@ -179,6 +195,10 @@ so_adc:
 so_sbb:
         popf
         sbb [r8], r9b
+        jmp continue_loop
+so_xchg:
+        popf
+        ; xchg [r8], [r9] ; TODO
         jmp continue_loop
 
 group1:
@@ -217,7 +237,11 @@ so_movi:
         jmp continue_loop
 so_xori:
         popf
+        call set_cf_variable
+        call set_zf_variable
         xor [r8], r9b
+        call set_zf_variable
+        call set_flags
         jmp continue_loop
 so_addi:
         popf
