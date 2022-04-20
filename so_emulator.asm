@@ -2,39 +2,32 @@ global so_emul
 
 section .bss
 
-A: resb 1
-D: resb 1
-X: resb 1
-Y: resb 1
-PC: resb 1
-unused: resb 1
-C: resb 1
-Z: resb 1
+mem: resq CORES
 
 section .text
 
 arg_pointer:
         cmp r11, 4
         jne check_Y
-        mov r11b, [rel X]
+        mov r11b, [rel mem + 2]
         lea r11, [rsi + r11]
         ret
 check_Y:
         cmp r11, 5
         jne check_XD
-        mov r11b, [rel Y]
+        mov r11b, [rel mem + 3]
         lea r11, [rsi + r11]
         ret
 check_XD:
         cmp r11, 6
         jne check_YD
-        mov r11b, [rel X]
-        add r11b, [rel D]
+        mov r11b, [rel mem + 2]
+        add r11b, [rel mem + 1]
         lea r11, [rsi + r11]
         ret
 check_YD:
-        mov r11b, [rel Y]
-        add r11b, [rel D]
+        mov r11b, [rel mem + 3]
+        add r11b, [rel mem + 1]
         lea r11, [rsi + r11]
         ret
 
@@ -53,26 +46,26 @@ arg_pointer_arg1_g1:
 
 set_flags:
         xor ah, ah
-        add ah, [rel Z]
+        add ah, [rel mem + 7]
         shl ah, 6
-        add ah, [rel C]
+        add ah, [rel mem + 6]
         sahf
         ret
 
 set_zf_variable:
         pushf
-        mov [rel Z], byte 0
+        mov [rel mem + 7], byte 0
         jnz .non_zero
-        mov [rel Z], byte 1
+        mov [rel mem + 7], byte 1
 .non_zero:
         popf
         ret
 
 set_cf_variable:
         pushf
-        mov [rel C], byte 0
+        mov [rel mem + 6], byte 0
         jnc .non_carry
-        mov [rel C], byte 1
+        mov [rel mem + 6], byte 1
 .non_carry:
         popf
         ret
@@ -93,7 +86,7 @@ so_emul:
 
         mov rcx, rdx
         xor rdx, rdx
-        mov dl, [rel PC]
+        mov dl, [rel mem + 4]
 
         cmp rcx, 0
         je end
@@ -130,7 +123,7 @@ group0:
         mov r11, r8
         cmp r11, 4
         jae arg_pointer_arg1_g0
-        lea rax, [rel A]
+        lea rax, [rel mem]
         add r11, rax
 arg_pointer_arg1_back_g0:
         mov r8, r11
@@ -138,7 +131,7 @@ arg_pointer_arg1_back_g0:
         mov r11, r9
         cmp r11, 4
         jae arg_pointer_arg2_g0
-        lea rax, [rel A]
+        lea rax, [rel mem]
         add r11, rax
 arg_pointer_arg2_back_g0:
         mov r9, r11
@@ -199,10 +192,9 @@ so_sbb:
         jmp continue_loop
 so_xchg:
         popf
-        ; xchg [r8], [r9] ; TODO
         mov al, [r9]
-        xchg [r8], al
-        xchg [r9], al
+        lock xchg [r8], al
+        mov [r9], al
         jmp continue_loop
 
 group1:
@@ -219,7 +211,7 @@ group1:
         mov r11, r8
         cmp r11, 4
         jae arg_pointer_arg1_g1
-        lea rax, [rel A]
+        lea rax, [rel mem]
         lea r11, [r11 + rax]
 arg_pointer_arg1_back_g1:
         mov r8, r11
@@ -338,9 +330,9 @@ end:
         call set_cf_variable
         call set_zf_variable
 
-        mov [rel PC], dl
+        mov [rel mem + 4], dl
 
-        mov rax, qword [rel A]
+        mov rax, qword [rel mem]
 
         add rsp, 16
         ret
