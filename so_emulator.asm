@@ -354,6 +354,11 @@ so_jz:
         jz so_jmp
         jmp continue_loop
 brk:
+        ; mov rax, qword 69
+        ; popf
+        ; add rsp, 8
+        ; ret
+        inc dl
         jmp end
 
 continue_loop:
@@ -377,7 +382,7 @@ end:
 
         mov [rax + 4], dl
 
-        mov rax, qword [rel mem]
+        mov rax, [rax]
 
         add rsp, 8
         ret
