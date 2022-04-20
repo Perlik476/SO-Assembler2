@@ -7,27 +7,29 @@ mem: resq CORES
 section .text
 
 arg_pointer:
+        lea rax, [rel mem]
+        add rax, [rsp + 16] ; bo +8 za pushf, +8 za call
         cmp r11, 4
         jne check_Y
-        mov r11b, [rel mem + 2]
+        mov r11b, [rax + 2]
         lea r11, [rsi + r11]
         ret
 check_Y:
         cmp r11, 5
         jne check_XD
-        mov r11b, [rel mem + 3]
+        mov r11b, [rax + 3]
         lea r11, [rsi + r11]
         ret
 check_XD:
         cmp r11, 6
         jne check_YD
-        mov r11b, [rel mem + 2]
-        add r11b, [rel mem + 1]
+        mov r11b, [rax + 2]
+        add r11b, [rax + 1]
         lea r11, [rsi + r11]
         ret
 check_YD:
-        mov r11b, [rel mem + 3]
-        add r11b, [rel mem + 1]
+        mov r11b, [rax + 3]
+        add r11b, [rax + 1]
         lea r11, [rsi + r11]
         ret
 
@@ -45,29 +47,39 @@ arg_pointer_arg1_g1:
     
 
 set_flags:
+        push rsi
+        lea rsi, [rel mem]
+        add rsi, [rsp + 16]
+
         xor ah, ah
-        add ah, [rel mem + 7]
+        add ah, [rsi + 7]
         shl ah, 6
-        add ah, [rel mem + 6]
+        add ah, [rsi + 6]
+
         sahf
+        pop rsi
         ret
 
 set_zf_variable:
         pushf
-        mov [rel mem + 7], byte 0
-        jnz .non_zero
-        mov [rel mem + 7], byte 1
-.non_zero:
+        lea rax, [rel mem]
+        add rax, [rsp + 16]
         popf
+        mov [rax + 7], byte 0
+        jnz .non_zero
+        mov [rax + 7], byte 1
+.non_zero:
         ret
 
 set_cf_variable:
         pushf
-        mov [rel mem + 6], byte 0
-        jnc .non_carry
-        mov [rel mem + 6], byte 1
-.non_carry:
+        lea rax, [rel mem]
+        add rax, [rsp + 16]
         popf
+        mov [rax + 6], byte 0
+        jnc .non_carry
+        mov [rax + 6], byte 1
+.non_carry:
         ret
 
 ; rdi - code
@@ -77,16 +89,18 @@ set_cf_variable:
 ; r8-r11 - A, D, X, Y
 ; rdx - PC
 so_emul:
-        call set_flags
+        push rcx ; core - [rsp]
 
-        push rcx ; core - [rsp + 8]
-        push rdx ; steps - [rsp]
+        call set_flags
 
         pushf
 
         mov rcx, rdx
         xor rdx, rdx
-        mov dl, [rel mem + 4]
+
+        lea rax, [rel mem]
+        add rax, [rsp + 8]
+        mov dl, [rax + 4]
 
         cmp rcx, 0
         je end
@@ -124,6 +138,7 @@ group0:
         cmp r11, 4
         jae arg_pointer_arg1_g0
         lea rax, [rel mem]
+        add rax, [rsp + 8]
         add r11, rax
 arg_pointer_arg1_back_g0:
         mov r8, r11
@@ -132,6 +147,7 @@ arg_pointer_arg1_back_g0:
         cmp r11, 4
         jae arg_pointer_arg2_g0
         lea rax, [rel mem]
+        add rax, [rsp + 8]
         add r11, rax
 arg_pointer_arg2_back_g0:
         mov r9, r11
@@ -212,6 +228,7 @@ group1:
         cmp r11, 4
         jae arg_pointer_arg1_g1
         lea rax, [rel mem]
+        add rax, [rsp + 8]
         lea r11, [r11 + rax]
 arg_pointer_arg1_back_g1:
         mov r8, r11
@@ -330,9 +347,11 @@ end:
         call set_cf_variable
         call set_zf_variable
 
-        mov [rel mem + 4], dl
+        lea rax, [rel mem]
+        add rax, [rsp]
+        mov [rax + 4], dl
 
         mov rax, qword [rel mem]
 
-        add rsp, 16
+        add rsp, 8
         ret
