@@ -7,8 +7,13 @@ mem: resq CORES
 section .text
 
 arg_pointer:
-        lea rax, [rel mem]
-        add rax, [rsp + 16] ; bo +8 za pushf, +8 za call
+        push rsi
+        lea rsi, [rel mem]
+        mov rax, [rsp + 24] ; bo +8 za pushf, +8 za call, +8 za push rsi
+        lea rax, [rax * 8]
+        add rax, rsi
+        pop rsi
+        
         cmp r11, 4
         jne check_Y
         mov r11b, [rax + 2]
@@ -48,8 +53,13 @@ arg_pointer_arg1_g1:
 
 set_flags:
         push rsi
-        lea rsi, [rel mem]
-        add rsi, [rsp + 16]
+        ; lea rsi, [rel mem]
+        ; add rsi, [rsp + 16]
+
+        mov rsi, [rsp + 16]
+        lea rsi, [rsi * 8]
+        lea rax, [rel mem]
+        add rsi, rax
 
         xor ah, ah
         add ah, [rsi + 7]
@@ -62,8 +72,10 @@ set_flags:
 
 set_zf_variable:
         pushf
-        lea rax, [rel mem]
-        add rax, [rsp + 16]
+        lea r10, [rel mem]
+        mov rax, [rsp + 16]
+        lea rax, [rax * 8]
+        add rax, r10
         popf
         mov [rax + 7], byte 0
         jnz .non_zero
@@ -73,8 +85,10 @@ set_zf_variable:
 
 set_cf_variable:
         pushf
-        lea rax, [rel mem]
-        add rax, [rsp + 16]
+        lea r10, [rel mem]
+        mov rax, [rsp + 16]
+        lea rax, [rax * 8]
+        add rax, r10
         popf
         mov [rax + 6], byte 0
         jnc .non_carry
@@ -98,8 +112,11 @@ so_emul:
         mov rcx, rdx
         xor rdx, rdx
 
-        lea rax, [rel mem]
-        add rax, [rsp + 8]
+        lea r8, [rel mem]
+        mov rax, [rsp + 8]
+        lea rax, [rax * 8]
+        add rax, r8
+
         mov dl, [rax + 4]
 
         cmp rcx, 0
@@ -137,8 +154,10 @@ group0:
         mov r11, r8
         cmp r11, 4
         jae arg_pointer_arg1_g0
-        lea rax, [rel mem]
-        add rax, [rsp + 8]
+        lea r8, [rel mem]
+        mov rax, [rsp + 8]
+        lea rax, [rax * 8]
+        add rax, r8
         add r11, rax
 arg_pointer_arg1_back_g0:
         mov r8, r11
@@ -146,8 +165,10 @@ arg_pointer_arg1_back_g0:
         mov r11, r9
         cmp r11, 4
         jae arg_pointer_arg2_g0
-        lea rax, [rel mem]
-        add rax, [rsp + 8]
+        lea r9, [rel mem]
+        mov rax, [rsp + 8]
+        lea rax, [rax * 8]
+        add rax, r9
         add r11, rax
 arg_pointer_arg2_back_g0:
         mov r9, r11
@@ -227,8 +248,10 @@ group1:
         mov r11, r8
         cmp r11, 4
         jae arg_pointer_arg1_g1
-        lea rax, [rel mem]
-        add rax, [rsp + 8]
+        lea r8, [rel mem]
+        mov rax, [rsp + 8]
+        lea rax, [rax * 8]
+        add rax, r8
         lea r11, [r11 + rax]
 arg_pointer_arg1_back_g1:
         mov r8, r11
@@ -347,8 +370,11 @@ end:
         call set_cf_variable
         call set_zf_variable
 
-        lea rax, [rel mem]
-        add rax, [rsp]
+        lea r8, [rel mem]
+        mov rax, [rsp]
+        lea rax, [rax * 8]
+        add rax, r8
+
         mov [rax + 4], dl
 
         mov rax, qword [rel mem]
