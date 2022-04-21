@@ -6,35 +6,28 @@ mem: resq CORES
 
 section .text
 
-arg_pointer:
-        push rsi
-        lea rsi, [rel mem]
-        mov rax, [rsp + 24] ; bo +8 za pushf, +8 za call, +8 za push rsi
-        lea rax, [rax * 8]
-        add rax, rsi
-        pop rsi
-        
+arg_pointer:       
         cmp r11, 4
         jne check_Y
-        mov r11b, [rax + 2]
+        mov r11b, [r12 + 2]
         lea r11, [rsi + r11]
         ret
 check_Y:
         cmp r11, 5
         jne check_XD
-        mov r11b, [rax + 3]
+        mov r11b, [r12 + 3]
         lea r11, [rsi + r11]
         ret
 check_XD:
         cmp r11, 6
         jne check_YD
-        mov r11b, [rax + 2]
-        add r11b, [rax + 1]
+        mov r11b, [r12 + 2]
+        add r11b, [r12 + 1]
         lea r11, [rsi + r11]
         ret
 check_YD:
-        mov r11b, [rax + 3]
-        add r11b, [rax + 1]
+        mov r11b, [r12 + 3]
+        add r11b, [r12 + 1]
         lea r11, [rsi + r11]
         ret
 
@@ -52,58 +45,40 @@ arg_pointer_arg1_g1:
     
 
 set_flags:
-        push rsi
-        ; lea rsi, [rel mem]
-        ; add rsi, [rsp + 16]
-
-        mov rsi, [rsp + 16]
-        lea rsi, [rsi * 8]
-        lea rax, [rel mem]
-        add rsi, rax
-
+        push rdx
+        mov rdx, r12
         xor ah, ah
-        add ah, [rsi + 7]
+        add ah, [rdx + 7]
         shl ah, 6
-        add ah, [rsi + 6]
-
+        add ah, [rdx + 6]
+        pop rdx
         sahf
-        pop rsi
         ret
 
 set_zf_variable:
-        pushf
-        lea r10, [rel mem]
-        mov rax, [rsp + 16]
-        lea rax, [rax * 8]
-        add rax, r10
-        popf
-        mov [rax + 7], byte 0
+        mov [r12 + 7], byte 0
         jnz .non_zero
-        mov [rax + 7], byte 1
+        mov [r12 + 7], byte 1
 .non_zero:
         ret
 
 set_cf_variable:
-        pushf
-        lea r10, [rel mem]
-        mov rax, [rsp + 16]
-        lea rax, [rax * 8]
-        add rax, r10
-        popf
-        mov [rax + 6], byte 0
+        mov [r12 + 6], byte 0
         jnc .non_carry
-        mov [rax + 6], byte 1
+        mov [r12 + 6], byte 1
 .non_carry:
         ret
 
+
 ; rdi - code
 ; rsi - data
-; [rsp] - steps
-; [rsp + 8] - core
-; r8-r11 - A, D, X, Y
-; rdx - PC
+; r12 - core
 so_emul:
-        push rcx ; core - [rsp]
+        push r12
+        mov r12, rcx
+
+        lea r12, [rel mem]
+        lea r12, [rcx * 8 + r12]
 
         call set_flags
 
@@ -112,12 +87,7 @@ so_emul:
         mov rcx, rdx
         xor rdx, rdx
 
-        lea r8, [rel mem]
-        mov rax, [rsp + 8]
-        lea rax, [rax * 8]
-        add rax, r8
-
-        mov dl, [rax + 4]
+        mov dl, [r12 + 4]
 
         cmp rcx, 0
         je end
@@ -154,22 +124,14 @@ group0:
         mov r11, r8
         cmp r11, 4
         jae arg_pointer_arg1_g0
-        lea r8, [rel mem]
-        mov rax, [rsp + 8]
-        lea rax, [rax * 8]
-        add rax, r8
-        add r11, rax
+        add r11, r12
 arg_pointer_arg1_back_g0:
         mov r8, r11
 
         mov r11, r9
         cmp r11, 4
         jae arg_pointer_arg2_g0
-        lea r9, [rel mem]
-        mov rax, [rsp + 8]
-        lea rax, [rax * 8]
-        add rax, r9
-        add r11, rax
+        add r11, r12
 arg_pointer_arg2_back_g0:
         mov r9, r11
 
@@ -248,11 +210,7 @@ group1:
         mov r11, r8
         cmp r11, 4
         jae arg_pointer_arg1_g1
-        lea r8, [rel mem]
-        mov rax, [rsp + 8]
-        lea rax, [rax * 8]
-        add rax, r8
-        lea r11, [r11 + rax]
+        add r11, r12
 arg_pointer_arg1_back_g1:
         mov r8, r11
 
@@ -354,10 +312,6 @@ so_jz:
         jz so_jmp
         jmp continue_loop
 brk:
-        ; mov rax, qword 69
-        ; popf
-        ; add rsp, 8
-        ; ret
         inc dl
         jmp end
 
@@ -375,14 +329,9 @@ end:
         call set_cf_variable
         call set_zf_variable
 
-        lea r8, [rel mem]
-        mov rax, [rsp]
-        lea rax, [rax * 8]
-        add rax, r8
+        mov [r12 + 4], dl
 
-        mov [rax + 4], dl
+        mov rax, [r12]
 
-        mov rax, [rax]
-
-        add rsp, 8
+        pop r12
         ret
