@@ -6,30 +6,20 @@ mem: resq CORES
 
 section .text
 
-arg_pointer:       
-        cmp r11, 4
-        jne check_Y
-        mov r11b, [r12 + 2]
-        lea r11, [rsi + r11]
-        ret
-check_Y:
-        cmp r11, 5
-        jne check_XD
-        mov r11b, [r12 + 3]
-        lea r11, [rsi + r11]
-        ret
-check_XD:
+arg_pointer:
+        mov rax, 1
+        and rax, r11
+
         cmp r11, 6
-        jne check_YD
-        mov r11b, [r12 + 2]
-        add r11b, [r12 + 1]
+        jae add_D
+        xor r11, r11
+add_X_or_Y:
+        add r11b, [r12 + 2 + rax]
         lea r11, [rsi + r11]
         ret
-check_YD:
-        mov r11b, [r12 + 3]
-        add r11b, [r12 + 1]
-        lea r11, [rsi + r11]
-        ret
+add_D:
+        mov r11b, [r12 + 1]
+        jmp add_X_or_Y
 
 arg_pointer_arg1_g0:
         call arg_pointer
